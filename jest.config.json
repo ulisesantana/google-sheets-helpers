@@ -3,8 +3,8 @@
     "<rootDir>/src"
   ],
   "testMatch": [
-    "**/__tests__/**/*.+(ts|js)", 
-    "**/?(*.)+(spec|test).+(ts|js)"
+    "**/__tests__/**/*.+(ts|js)",
+    "**/*.+(ts|js)"
   ],
   "transform": {
     "^.+\\.(ts)?$": "ts-jest"
