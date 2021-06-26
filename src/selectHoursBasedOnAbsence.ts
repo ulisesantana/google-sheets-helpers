@@ -3,11 +3,12 @@
  *
  * @param {string} absence The absence duration.
  * @param {string} expected The expected duration for the day hours.
- * @param {number} proportion The proportional duration for the day hours based on total hours for that day.
+ * @param {string} total The total hours for that day.
+ * @param {string} proportional The proportional duration for the day hours based on total hours for that day.
  * @return {string} The hours.
  * @customfunction
  */
-function SELECT_HOURS_BASED_ON_ABSENCE (absence, expected, proportion) {
+function SELECT_HOURS_BASED_ON_ABSENCE (absence, expected, total, proportional) {
   // Only valid for cases with less than 24 hours
   function fromMinutesToDuration (minutes) {
     const timeInMs = minutes * 60 * 1000
@@ -20,19 +21,35 @@ function SELECT_HOURS_BASED_ON_ABSENCE (absence, expected, proportion) {
     const [hours, minutes, seconds] = duration.split(':').map(Number)
     return hours * 60 + minutes + seconds / 60
   }
-  return absence !== '#N/A'
-    ? fromMinutesToDuration(fromDurationToMinutes(expected) - fromDurationToMinutes(absence) * proportion)
-    : fromMinutesToDuration(fromDurationToMinutes(expected))
+  if (absence !== '#N/A') {
+    const absenceMinutes = fromDurationToMinutes(absence)
+    const expectedMinutes = fromDurationToMinutes(expected)
+    const totalMinutes = fromDurationToMinutes(total)
+    const proportion = fromDurationToMinutes(proportional) / fromDurationToMinutes(total)
+    if (absenceMinutes < expectedMinutes) {
+      return fromMinutesToDuration(((expectedMinutes - absenceMinutes) * proportion) + (totalMinutes - expectedMinutes))
+    } else {
+      return expectedMinutes === 0
+        ? fromMinutesToDuration((absenceMinutes - totalMinutes) * proportion)
+        : fromMinutesToDuration((absenceMinutes - expectedMinutes) * proportion)
+    }
+  } else {
+    return fromMinutesToDuration(fromDurationToMinutes(expected))
+  }
 }
 
 describe('SELECT_HOURS_BASED_ON_ABSENCE should', () => {
   it('retrieve the correct hours based on the given values', () => {
-    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '8:00:00', 0.875)).toBe('04:30:00')
-    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '3:00:00', 0.875)).toBe('00:30:00')
-    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '4:00:00', 0.125)).toBe('03:30:00')
-    expect(SELECT_HOURS_BASED_ON_ABSENCE('2:00:00', '8:00:00', 0.875)).toBe('06:15:00')
-    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '00:00:00', 0.125)).toBe('00:30:00')
-    expect(SELECT_HOURS_BASED_ON_ABSENCE('#N/A', '8:00:00', 0.875)).toBe('08:00:00')
-    expect(SELECT_HOURS_BASED_ON_ABSENCE('#N/A', '00:00:00', 0.125)).toBe('00:00:00')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '8:00:00', '8:00:00', '7:00:00')).toBe('03:30:00')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('2:00:00', '8:00:00', '8:00:00', '7:00:00')).toBe('05:15:00')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '00:00:00', '8:00:00', '1:00:00')).toBe('00:30:00')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('#N/A', '8:00:00', '8:00:00', '7:00:00')).toBe('08:00:00')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('#N/A', '00:00:00', '8:00:00', '1:00:00')).toBe('00:00:00')
+  })
+  it('for a given day the collaborator hours and the training hours added must not be more than the absence', () => {
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '3:00:00', '8:00:00', '7:00:00')).toBe('00:52:30')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('4:00:00', '5:00:00', '8:00:00', '1:00:00')).toBe('03:07:30')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('2:00:00', '8:00:00', '8:00:00', '7:00:00')).toBe('05:15:00')
+    expect(SELECT_HOURS_BASED_ON_ABSENCE('2:00:00', '0:00:00', '8:00:00', '1:00:00')).toBe('00:45:00')
   })
 })
