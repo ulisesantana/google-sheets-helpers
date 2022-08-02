@@ -20,14 +20,14 @@ function GET_HOURS_BASED_ON_BALANCE (lastBalances, expected) {
     return hours * 60 + minutes + seconds / 60
   }
 
-  console.log('RECEIVED LAST BALANCES', lastBalances)
+  // console.debug('RECEIVED LAST BALANCES', lastBalances)
   lastBalances = Array.isArray(lastBalances) ? lastBalances : [[lastBalances]]
   const expectedMinutes = fromDurationToMinutes(expected)
   if (expectedMinutes <= 0) {
     return expected
   }
   const lastWorkWeekBalances = lastBalances.flat().slice(lastBalances.length - 6)
-  console.log('COMPUTED LAST WORKWEEK BALANCES', lastWorkWeekBalances)
+  // console.debug('COMPUTED LAST WORKWEEK BALANCES', lastWorkWeekBalances)
   const negativeBalance = lastWorkWeekBalances
     .filter(balance => balance[0] === '-')
     .reduce((total, balance) => total + fromDurationToMinutes(balance), 0)
