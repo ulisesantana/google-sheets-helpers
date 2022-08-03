@@ -20,24 +20,26 @@ function GET_HOURS_BASED_ON_ABSENCE (absence, expected, total, proportional) {
 
   function fromDurationToMinutes (duration) {
     const [hours, minutes, seconds] = duration.split(':').map(Number)
+    if (hours < 0) {
+      return -(Math.abs(hours) * 60 + minutes + seconds / 60)
+    }
     return hours * 60 + minutes + seconds / 60
   }
 
   const expectedMinutes = fromDurationToMinutes(expected)
-  if (absence !== '#N/A' && expectedMinutes > 0) {
-    const absenceMinutes = fromDurationToMinutes(absence)
-    const totalMinutes = fromDurationToMinutes(total)
-    const proportion = fromDurationToMinutes(proportional) / fromDurationToMinutes(total)
-    if (expectedMinutes === totalMinutes) {
-      return fromMinutesToDuration(expectedMinutes - absenceMinutes)
-    }
-    if (absenceMinutes < expectedMinutes) {
-      return fromMinutesToDuration(((expectedMinutes - absenceMinutes) * proportion) + (totalMinutes - expectedMinutes))
-    }
-    return fromMinutesToDuration((absenceMinutes - expectedMinutes) * proportion)
-  } else {
+  const absenceMinutes = fromDurationToMinutes(absence)
+  if (absence === '#N/A' || expectedMinutes === 0 || absenceMinutes === 0) {
     return fromMinutesToDuration(expectedMinutes)
   }
+  const totalMinutes = fromDurationToMinutes(total)
+  const proportion = fromDurationToMinutes(proportional) / fromDurationToMinutes(total)
+  if (expectedMinutes === totalMinutes) {
+    return fromMinutesToDuration(expectedMinutes - absenceMinutes)
+  }
+  if (absenceMinutes < expectedMinutes) {
+    return fromMinutesToDuration(((expectedMinutes - absenceMinutes) * proportion) + (totalMinutes - expectedMinutes))
+  }
+  return fromMinutesToDuration((absenceMinutes - expectedMinutes) * proportion)
 }
 
 describe('GET_HOURS_BASED_ON_ABSENCE should', () => {
@@ -49,9 +51,12 @@ describe('GET_HOURS_BASED_ON_ABSENCE should', () => {
     expect(GET_HOURS_BASED_ON_ABSENCE('2:00:00', '0:00:00', '8:00:00', '1:00:00')).toBe('00:00:00')
     expect(GET_HOURS_BASED_ON_ABSENCE('4:00:00', '0:00:00', '8:00:00', '1:00:00')).toBe('00:00:00')
   })
-  it('if absence is #N/A the expected duration is returned with the proper format', () => {
+  it('if absence is #N/A or 0:00:00 the expected duration is returned with the proper format', () => {
     expect(GET_HOURS_BASED_ON_ABSENCE('#N/A', '8:00:00', '8:00:00', '7:00:00')).toBe('08:00:00')
     expect(GET_HOURS_BASED_ON_ABSENCE('#N/A', '00:00:00', '8:00:00', '1:00:00')).toBe('00:00:00')
+    expect(
+      GET_HOURS_BASED_ON_ABSENCE('0:00:00', '8:00:00', '7:12:00', '6:24:00')
+    ).toBe('08:00:00')
   })
   it('for a given day the collaborator hours and the training hours must not be more than the absence', () => {
     expect(GET_HOURS_BASED_ON_ABSENCE('4:00:00', '3:00:00', '8:00:00', '7:00:00')).toBe('00:52:30')

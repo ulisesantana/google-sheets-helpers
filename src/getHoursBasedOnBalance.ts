@@ -17,6 +17,9 @@ function GET_HOURS_BASED_ON_BALANCE (lastBalances, expected) {
   }
   function fromDurationToMinutes (duration) {
     const [hours, minutes, seconds] = duration.split(':').map(Number)
+    if (hours < 0) {
+      return -(Math.abs(hours) * 60 + minutes + seconds / 60)
+    }
     return hours * 60 + minutes + seconds / 60
   }
 
